@@ -140,6 +140,7 @@ pub enum C1Token {
     Error,
 }
 
+
 /// # Overview
 /// Extended lexer based on the logos crate. The lexer keeps track of the current token and the next token
 /// in the lexed text. Furthermore, the lexer keeps track of the line number in which each token is
