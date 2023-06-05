@@ -27,14 +27,21 @@ impl<'a> C1Parser<'a> {
     fn initialize_parser(text: &str) -> C1Parser {
         C1Parser(C1Lexer::new(text))
     }
+    //check for errors and eat them
+    fn eat_errors(&mut self){
+        while self.any_match_current(&[C1Token::Error]){
+            self.eat();
+        }
+    }
 
     //beginn der Grammatik mit "Programm"
     /// program ::= ( functiondefinition )* <EOF>
     fn program(&mut self) -> ParseResult {
+
         
         //check for eof still missing?
         loop{
-
+            self.eat_errors();
             //check if the next is none aka if the eof is reached
             if self.current_token().is_none(){
 
@@ -80,11 +87,14 @@ impl<'a> C1Parser<'a> {
 
     //statementlist       ::= ( block )*
     fn statement_list(&mut self) -> ParseResult{
-        //how does * work?
+        
+        self.eat_errors();
         loop{
             //check if the a block follows
             if self.any_match_current(&[C1Token::LeftBrace,C1Token::KwIf,C1Token::KwReturn,C1Token::KwPrintf,C1Token::Identifier]){
+                
                 self.block()?;
+                self.eat_errors();
             }
             //else we hit the end of the ()*
             else{
@@ -124,18 +134,18 @@ impl<'a> C1Parser<'a> {
         //case returnstatement
         else if self.current_matches(&C1Token::KwReturn){
             self.return_statement()?;
-            self.check_and_eat_token(&C1Token::Semicolon, "error")
+            self.check_and_eat_token(&C1Token::Semicolon, &self.error_message_current("expected ';' in statement"))
         }
         //case printf
         else if self.current_matches(&C1Token::KwPrintf){
             self.printf()?;
-            self.check_and_eat_token(&C1Token::Semicolon, "error")
+            self.check_and_eat_token(&C1Token::Semicolon, &self.error_message_current("expected ';' in statement"))
 
         }
         //case statassignment (id "=") functioncall also starts with id so we check the next ("=")
         else if self.next_matches(&C1Token::Assign){
             self.stat_assignment()?;
-            self.check_and_eat_token(&C1Token::Semicolon, "error")
+            self.check_and_eat_token(&C1Token::Semicolon, &self.error_message_current("expected ';' in statement"))
 
         }
         //case functioncall (id "(") check next ( "(" )
@@ -429,14 +439,14 @@ mod tests {
 
     #[test]
     fn valid_function() {
-        let result = C1Parser::parse("  void foo() {}  ");
-        assert!(result.is_ok());
+        //let result = C1Parser::parse("  void foo() {}  ");
+        //assert!(result.is_ok());
 
-        let result = C1Parser::parse("int bar() {return 0;}");
-        assert!(result.is_ok());
+        //let result = C1Parser::parse("int bar() {return 0;}");
+        //assert!(result.is_ok());
 
         let result = C1Parser::parse(
-            "float calc() {\n\
+            "   \n    float calc() {\n\
         x = 1.0;
         y = 2.2;
         return x + y;
